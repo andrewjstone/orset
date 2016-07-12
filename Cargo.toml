@@ -2,6 +2,7 @@
 name = "orset"
 version = "0.1.0"
 authors = ["Andrew J. Stone <andrew.j.stone.1@gmail.com>"]
+description = "An Observe Remove Set CRDT with delta mutation"
 repository = "https://github.com/andrewjstone/orset"
 keywords = ["orset", "crdt"]
 license = "Apache-2.0"
