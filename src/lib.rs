@@ -24,11 +24,14 @@ pub enum Delta<T> {
     Remove { element: T, dots: Vec<Dot> }
 }
 
-/// Since we never remove tombstones from `removes`, we don't bother storing the
-/// identical dots in `adds`. This reduces the amount of memory required, and it
-/// also increases efficiency for membership existence checks by only requiring
-/// checking `adds` for emptyness instead of requiring comparison between `adds`
-/// and `removes`. It does however, increase the cost of joins.
+
+// Since we never remove tombstones from `removes`, we don't bother storing the
+// identical dots in `adds`. This reduces the amount of memory required, and it
+// also increases efficiency for membership existence checks by only requiring
+// checking `adds` for emptyness instead of requiring comparison between `adds`
+// and `removes`. It does however, increase the cost of joins.
+//
+/// A state based Observe-Remove Set with delta mutation
 #[derive(Debug, Clone, Eq, PartialEq, RustcEncodable, RustcDecodable)]
 pub struct ORSet<T: Eq + Hash> {
 pub name: String,
@@ -38,6 +41,7 @@ pub name: String,
 }
 
 impl<T: Eq + Hash + Clone> ORSet<T> {
+    /// Create a new instance of an ORSet
     pub fn new(name: String) -> ORSet<T> {
         ORSet {
             name: name,
@@ -47,8 +51,8 @@ impl<T: Eq + Hash + Clone> ORSet<T> {
         }
     }
 
-    #[allow(dead_code)]
-    fn seen(&self, element: &T) -> Option<Vec<Dot>> {
+    /// Return any observed dots for a given element or None if the element has not been seen
+    pub fn seen(&self, element: &T) -> Option<Vec<Dot>> {
         match self.adds.get(element) {
             None => None,
             Some(dots) => {
@@ -61,6 +65,10 @@ impl<T: Eq + Hash + Clone> ORSet<T> {
         }
     }
 
+    /// Add an element to an ORSet
+    ///
+    /// This method creates a new dot for the element and puts it in the add set. It returns the
+    /// delta mutator representing the add.
     pub fn add(&mut self, element: T) -> Delta<T> {
         self.counter += 1;
         let dot = Dot {actor: self.name.clone(), counter: self.counter};
@@ -70,8 +78,11 @@ impl<T: Eq + Hash + Clone> ORSet<T> {
         delta
     }
 
+    /// Remove an element from an ORSet by passing in the element and it's observed dots
+    ///
+    /// This method returns a delta mutator representing the remove operation.
+    ///
     /// Invariant: seen can never be empty
-    #[allow(dead_code)]
     pub fn remove(&mut self, element: T, seen: Vec<Dot>) -> Delta<T> {
         assert!(seen.len() != 0);
         let mut removes = self.removes.entry(element.clone()).or_insert(Vec::new());
@@ -85,7 +96,8 @@ impl<T: Eq + Hash + Clone> ORSet<T> {
         Delta::Remove { element: element, dots: seen}
     }
 
-    // No overloaded functions in Rust. This feels wrong...
+    /// Merge another ORSet into this ORSet
+    ///
     /// Returns true if the state was mutated, false otherwise
     pub fn join_state(&mut self, from: ORSet<T>) -> bool {
         let mut mutated = false;
@@ -105,8 +117,9 @@ impl<T: Eq + Hash + Clone> ORSet<T> {
         mutated
     }
 
+    /// Merge a delta into an ORSet
+    ///
     /// Returns true if the state was mutated, false otherwise
-    #[allow(dead_code)]
     pub fn join(&mut self, delta: Delta<T>) -> bool {
         match delta {
             Delta::Add {element, dot} => self.join_add(element, dot),
@@ -114,7 +127,7 @@ impl<T: Eq + Hash + Clone> ORSet<T> {
         }
     }
 
-    /// Returns true if the state was mutated, false otherwise
+    // Returns true if the state was mutated, false otherwise
     fn join_add(&mut self, element: T, dot: Dot) -> bool {
         let adds = self.adds.entry(element.clone()).or_insert(Vec::new());
         if !adds.contains(&dot) {
@@ -134,7 +147,7 @@ impl<T: Eq + Hash + Clone> ORSet<T> {
         }
     }
 
-    /// Returns true if the state was mutated, false otherwise
+    // Returns true if the state was mutated, false otherwise
     fn join_remove(&mut self, element: T, mut dots: Vec<Dot>) -> bool {
         let adds = self.adds.entry(element.clone()).or_insert(Vec::new());
         let removes = self.removes.entry(element).or_insert(Vec::new());
@@ -149,7 +162,7 @@ impl<T: Eq + Hash + Clone> ORSet<T> {
         return mutated
     }
 
-    #[allow(dead_code)]
+    /// Check if an ORSet contains an element
     pub fn contains(&self, element: &T) -> bool {
         if let Some(adds) = self.adds.get(element) {
             if adds.is_empty() {
@@ -162,6 +175,7 @@ impl<T: Eq + Hash + Clone> ORSet<T> {
         }
     }
 
+    /// Return the elements in an ORSet
     pub fn elements(&self) -> Vec<T> {
         self.adds.iter().fold(Vec::new(), |mut acc, (elem, dots)| {
             if dots.is_empty() {
