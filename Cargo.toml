@@ -8,8 +8,8 @@ keywords = ["orset", "crdt"]
 license = "Apache-2.0"
 
 [dependencies]
-rustc-serialize = "*"
+rustc-serialize = "0.3"
 
 [dev-dependencies]
-quickcheck = "*"
-rand = "*"
+quickcheck = "0.2"
+rand = "0.3"
