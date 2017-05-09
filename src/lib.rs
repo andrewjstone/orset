@@ -2,7 +2,8 @@
 //! "Efficient State-based CRDTs by Delta-Mutation" by Almeida et. al
 //! http://gsd.di.uminho.pt/members/cbm/ps/delta-crdt-draft16may2014.pdf
 
-extern crate rustc_serialize;
+#[macro_use]
+extern crate serde_derive;
 #[cfg(test)]
 extern crate quickcheck;
 #[cfg(test)]
@@ -12,13 +13,13 @@ use std::collections::{HashMap};
 use std::hash::Hash;
 use std::option::Option;
 
-#[derive(Debug, Clone, Eq, PartialEq, RustcEncodable, RustcDecodable)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Dot {
     actor: String,
     counter: u64
 }
 
-#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Delta<T> {
     Add { element: T, dot: Dot },
     Remove { element: T, dots: Vec<Dot> }
@@ -32,7 +33,7 @@ pub enum Delta<T> {
 // and `removes`. It does however, increase the cost of joins.
 //
 /// A state based Observe-Remove Set with delta mutation
-#[derive(Debug, Clone, Eq, PartialEq, RustcEncodable, RustcDecodable)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ORSet<T: Eq + Hash> {
 pub name: String,
     counter: u64,
